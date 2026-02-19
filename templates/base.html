@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>{% block title %}Dex Inv{% endblock %}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet"/>
+  <style>
+    :root{
+      --bg:#07080d;
+      --surface:#0e1117;
+      --surface2:#141920;
+      --surface3:#1a2130;
+      --border:#1d2638;
+      --border2:#243045;
+      --accent:#06d6a0;
+      --accent2:#118ab2;
+      --accent3:#ffd166;
+      --danger:#ff4d6d;
+      --warn:#ffb703;
+      --text:#eef0f4;
+      --muted:#4a5568;
+      --muted2:#6b7a90;
+      --font-display:'Syne',sans-serif;
+      --font-mono:'JetBrains Mono',monospace;
+      --font-body:'Outfit',sans-serif;
+      --radius:10px;
+      --shadow:0 4px 24px rgba(0,0,0,.4);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{background:var(--bg);color:var(--text);font-family:var(--font-body);
+      min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden;}
+
+    /* ── Noise overlay ── */
+    body::before{
+      content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      opacity:.4;
+    }
+
+    .app-wrap{display:flex;flex:1;position:relative;z-index:1}
+
+    /* ── Sidebar ── */
+    #sidebar{
+      width:220px;min-height:100vh;background:var(--surface);
+      border-right:1px solid var(--border);
+      display:flex;flex-direction:column;flex-shrink:0;
+      position:sticky;top:0;height:100vh;
+      transition:width .3s cubic-bezier(.4,0,.2,1);
+    }
+    .sidebar-logo{
+      padding:22px 18px 18px;border-bottom:1px solid var(--border);
+      display:flex;align-items:center;gap:10px;
+    }
+    .logo-mark{
+      width:34px;height:34px;background:var(--accent);border-radius:8px;
+      display:flex;align-items:center;justify-content:center;
+      font-family:var(--font-display);font-weight:800;font-size:16px;color:#000;
+      flex-shrink:0;
+    }
+    .logo-text{font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--text);}
+    .logo-text span{color:var(--accent);}
+    .logo-sub{font-size:9px;color:var(--muted2);font-family:var(--font-mono);letter-spacing:1.5px;}
+
+    .nav-group{padding:10px 10px 4px;}
+    .nav-group-label{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;
+      padding:6px 8px 4px;font-family:var(--font-mono);}
+    .nav-link{
+      display:flex;align-items:center;gap:9px;padding:8px 10px;
+      border-radius:8px;color:var(--muted2);font-size:13.5px;font-weight:500;
+      text-decoration:none;transition:all .18s ease;position:relative;
+      margin-bottom:2px;
+    }
+    .nav-link:hover{background:var(--surface2);color:var(--text);transform:translateX(2px);}
+    .nav-link.active{background:rgba(6,214,160,.1);color:var(--accent);border:1px solid rgba(6,214,160,.2);}
+    .nav-link.active::before{
+      content:'';position:absolute;left:-10px;top:50%;transform:translateY(-50%);
+      width:3px;height:20px;background:var(--accent);border-radius:0 3px 3px 0;
+    }
+    .nav-link i{font-size:15px;width:16px;text-align:center;flex-shrink:0;}
+    .nav-badge{margin-left:auto;background:var(--danger);color:#fff;font-size:9px;
+      padding:1px 6px;border-radius:20px;font-family:var(--font-mono);font-weight:600;}
+
+    .sidebar-footer{
+      margin-top:auto;padding:14px;border-top:1px solid var(--border);
+    }
+    .user-chip{display:flex;align-items:center;gap:9px;padding:8px 6px;border-radius:8px;}
+    .avatar{
+      width:30px;height:30px;border-radius:8px;flex-shrink:0;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      display:flex;align-items:center;justify-content:center;
+      font-family:var(--font-display);font-size:13px;font-weight:700;color:#000;
+    }
+    .user-info{flex:1;overflow:hidden;}
+    .user-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .user-role{font-size:10px;color:var(--muted2);font-family:var(--font-mono);text-transform:uppercase;}
+    .logout-btn{color:var(--muted);text-decoration:none;font-size:14px;transition:color .15s;}
+    .logout-btn:hover{color:var(--danger);}
+
+    /* ── Main ── */
+    #main{flex:1;display:flex;flex-direction:column;min-height:100vh;}
+    .topbar{
+      padding:14px 28px;background:var(--surface);border-bottom:1px solid var(--border);
+      display:flex;align-items:center;justify-content:space-between;
+      position:sticky;top:0;z-index:100;backdrop-filter:blur(12px);
+    }
+    .topbar-left{display:flex;flex-direction:column;}
+    .topbar-title{font-family:var(--font-display);font-size:17px;font-weight:700;}
+    .topbar-path{font-size:11px;color:var(--muted2);font-family:var(--font-mono);}
+    .topbar-right{display:flex;align-items:center;gap:14px;}
+    .topbar-time{font-family:var(--font-mono);font-size:11px;color:var(--muted2);}
+    .status-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);
+      animation:pulse-dot 2s infinite;}
+    @keyframes pulse-dot{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(6,214,160,.4)}
+      50%{opacity:.8;box-shadow:0 0 0 5px rgba(6,214,160,0)}}
+
+    .content{padding:26px 28px;flex:1;}
+
+    /* ── Page enter animation ── */
+    .page-enter{animation:pageIn .4s cubic-bezier(.4,0,.2,1) both;}
+    @keyframes pageIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+    .stagger-1{animation-delay:.05s}
+    .stagger-2{animation-delay:.1s}
+    .stagger-3{animation-delay:.15s}
+    .stagger-4{animation-delay:.2s}
+
+    /* ── Cards ── */
+    .card{
+      background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+      transition:border-color .2s, box-shadow .2s;
+    }
+    .card:hover{border-color:var(--border2);}
+    .card-hd{
+      padding:14px 18px;border-bottom:1px solid var(--border);
+      font-family:var(--font-mono);font-size:11px;font-weight:500;
+      color:var(--muted2);letter-spacing:1.5px;text-transform:uppercase;
+      display:flex;align-items:center;justify-content:space-between;
+    }
+
+    /* ── Stat cards ── */
+    .stat-card{
+      background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+      padding:20px;position:relative;overflow:hidden;
+      transition:all .25s ease;cursor:default;
+    }
+    .stat-card::before{
+      content:'';position:absolute;inset:0;
+      background:linear-gradient(135deg,var(--glow-color,transparent) 0%,transparent 60%);
+      opacity:0;transition:opacity .25s;
+    }
+    .stat-card:hover::before{opacity:1;}
+    .stat-card:hover{border-color:var(--glow-border,var(--border2));transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.3);}
+    .stat-icon-bg{
+      width:40px;height:40px;border-radius:10px;
+      display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:14px;
+    }
+    .stat-label{font-size:11px;color:var(--muted2);font-family:var(--font-mono);letter-spacing:1px;text-transform:uppercase;}
+    .stat-value{font-family:var(--font-display);font-size:26px;font-weight:700;margin-top:4px;line-height:1;}
+    .stat-sub{font-size:11px;color:var(--muted2);margin-top:6px;}
+
+    /* ── Table ── */
+    .dtable{width:100%;border-collapse:collapse;}
+    .dtable th{
+      font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;
+      text-transform:uppercase;color:var(--muted);padding:11px 14px;
+      border-bottom:1px solid var(--border);font-weight:500;white-space:nowrap;
+    }
+    .dtable td{padding:11px 14px;border-bottom:1px solid rgba(29,38,56,.7);font-size:13.5px;vertical-align:middle;}
+    .dtable tr:last-child td{border-bottom:none;}
+    .dtable tbody tr{transition:background .12s;}
+    .dtable tbody tr:hover{background:rgba(255,255,255,.022);}
+    .dtable tbody tr.animate-row{
+      animation:rowIn .3s ease both;
+    }
+    @keyframes rowIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+
+    /* ── Badges ── */
+    .chip{font-size:10px;padding:2px 8px;border-radius:20px;font-family:var(--font-mono);font-weight:500;white-space:nowrap;}
+    .chip-green{background:rgba(6,214,160,.12);color:#06d6a0;border:1px solid rgba(6,214,160,.2);}
+    .chip-red{background:rgba(255,77,109,.12);color:#ff4d6d;border:1px solid rgba(255,77,109,.2);}
+    .chip-yellow{background:rgba(255,183,3,.12);color:#ffb703;border:1px solid rgba(255,183,3,.2);}
+    .chip-blue{background:rgba(17,138,178,.12);color:#4fc3f7;border:1px solid rgba(17,138,178,.2);}
+    .chip-purple{background:rgba(139,92,246,.12);color:#a78bfa;border:1px solid rgba(139,92,246,.2);}
+    .chip-gray{background:rgba(74,85,104,.15);color:var(--muted2);border:1px solid var(--border);}
+
+    /* ── Forms ── */
+    .form-control,.form-select{
+      background:var(--surface2);border:1px solid var(--border);color:var(--text);
+      border-radius:8px;padding:9px 13px;font-size:13.5px;font-family:var(--font-body);
+      transition:border-color .2s, box-shadow .2s;
+    }
+    .form-control:focus,.form-select:focus{
+      background:var(--surface2);border-color:var(--accent);
+      box-shadow:0 0 0 3px rgba(6,214,160,.1);color:var(--text);
+    }
+    .form-control::placeholder{color:var(--muted);}
+    .form-label{font-size:11px;font-weight:500;color:var(--muted2);
+      letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px;font-family:var(--font-mono);}
+    select option{background:var(--surface2);color:var(--text);}
+
+    /* ── Buttons ── */
+    .btn-primary-dex{
+      background:var(--accent);color:#000;font-weight:600;border:none;
+      border-radius:8px;padding:9px 18px;font-size:13.5px;cursor:pointer;
+      transition:all .18s;font-family:var(--font-body);display:inline-flex;align-items:center;gap:6px;
+    }
+    .btn-primary-dex:hover{background:#05c490;transform:translateY(-1px);box-shadow:0 6px 20px rgba(6,214,160,.25);}
+    .btn-ghost-dex{
+      background:transparent;border:1px solid var(--border2);color:var(--muted2);
+      border-radius:8px;padding:8px 15px;font-size:13px;cursor:pointer;
+      transition:all .18s;font-family:var(--font-body);text-decoration:none;display:inline-flex;align-items:center;gap:6px;
+    }
+    .btn-ghost-dex:hover{border-color:var(--accent);color:var(--accent);}
+    .btn-danger-dex{
+      background:rgba(255,77,109,.1);border:1px solid rgba(255,77,109,.25);
+      color:#ff4d6d;border-radius:7px;padding:5px 11px;font-size:12px;cursor:pointer;
+      transition:all .15s;font-family:var(--font-body);
+    }
+    .btn-danger-dex:hover{background:rgba(255,77,109,.2);}
+    .btn-sm-dex{padding:5px 11px;font-size:12px;}
+
+    /* ── Flash messages ── */
+    .flash-msg{
+      border-radius:9px;padding:11px 16px;font-size:13px;
+      display:flex;align-items:center;gap:9px;margin-bottom:14px;
+      animation:flashIn .35s ease both;
+    }
+    @keyframes flashIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+    .flash-success{background:rgba(6,214,160,.1);border:1px solid rgba(6,214,160,.25);color:#06d6a0;}
+    .flash-warning{background:rgba(255,183,3,.1);border:1px solid rgba(255,183,3,.25);color:#ffb703;}
+    .flash-danger{background:rgba(255,77,109,.1);border:1px solid rgba(255,77,109,.25);color:#ff4d6d;}
+
+    /* ── Footer ── */
+    .app-footer{
+      background:var(--surface);border-top:1px solid var(--border);
+      padding:12px 28px;display:flex;align-items:center;justify-content:space-between;
+      font-size:11px;color:var(--muted);font-family:var(--font-mono);
+      position:relative;z-index:1;
+    }
+    .footer-brand{display:flex;align-items:center;gap:6px;color:var(--muted2);}
+    .footer-brand strong{color:var(--accent);}
+    .footer-credit{
+      display:flex;align-items:center;gap:6px;
+      color:var(--muted);transition:color .15s;
+    }
+    .footer-credit a{
+      color:var(--muted2);text-decoration:none;transition:color .15s;
+      display:flex;align-items:center;gap:4px;
+    }
+    .footer-credit a:hover{color:var(--accent);}
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar{width:5px;height:5px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+    ::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+<div class="app-wrap">
+
+<!-- ── SIDEBAR ── -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">D</div>
+    <div>
+      <div class="logo-text">Dex <span>Inv</span></div>
+      <div class="logo-sub">INVENTORY OS</div>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-group-label">Main</div>
+    <a href="/dashboard" class="nav-link {% if request.path=='/dashboard' %}active{% endif %}">
+      <i class="bi bi-grid-1x2-fill"></i>Dashboard
+    </a>
+    <a href="/inventory" class="nav-link {% if '/inventory' in request.path or '/product' in request.path %}active{% endif %}">
+      <i class="bi bi-boxes"></i>Inventory
+    </a>
+    <a href="/invoices" class="nav-link {% if '/invoice' in request.path %}active{% endif %}">
+      <i class="bi bi-receipt"></i>Billing
+    </a>
+    <a href="/transactions" class="nav-link {% if request.path=='/transactions' %}active{% endif %}">
+      <i class="bi bi-arrow-left-right"></i>Transactions
+    </a>
+  </div>
+
+  {% if session.role == 'admin' %}
+  <div class="nav-group" style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px;">
+    <div class="nav-group-label" style="color:#ff4d6d">Admin</div>
+    <a href="/admin/users" class="nav-link {% if request.path=='/admin/users' %}active{% endif %}">
+      <i class="bi bi-people-fill"></i>Users
+    </a>
+    <a href="/admin/companies" class="nav-link {% if request.path=='/admin/companies' %}active{% endif %}">
+      <i class="bi bi-buildings"></i>Companies
+    </a>
+    <a href="/admin/activity" class="nav-link {% if request.path=='/admin/activity' %}active{% endif %}">
+      <i class="bi bi-activity"></i>Activity Log
+    </a>
+  </div>
+  {% endif %}
+
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="avatar">{{ session.user[0].upper() }}</div>
+      <div class="user-info">
+        <div class="user-name">{{ session.user }}</div>
+        <div class="user-role">{{ session.role }}</div>
+      </div>
+      <a href="/logout" class="logout-btn" title="Logout"><i class="bi bi-box-arrow-right"></i></a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── MAIN ── -->
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title">{% block pagetitle %}Dashboard{% endblock %}</div>
+      <div class="topbar-path">{% block breadcrumb %}dex-inv / dashboard{% endblock %}</div>
+    </div>
+    <div class="topbar-right">
+      <div class="status-dot" title="System Online"></div>
+      <div class="topbar-time" id="clock">—</div>
+    </div>
+  </div>
+
+  <div class="content page-enter">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for cat,msg in messages %}
+          <div class="flash-msg flash-{{ cat }}">
+            <i class="bi bi-{% if cat=='success' %}check-circle-fill{% elif cat=='warning' %}exclamation-triangle-fill{% else %}x-circle-fill{% endif %}"></i>
+            {{ msg }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </div>
+
+  <!-- ── FOOTER ── -->
+  <footer class="app-footer">
+    <div class="footer-brand"><strong>Dex Inv</strong> · Smart Inventory OS · v2.0</div>
+    <div class="footer-credit">
+      Built by
+      <a href="https://instagram.com/dex.asm" target="_blank">
+        <i class="bi bi-instagram"></i>@dex.asm
+      </a>
+    </div>
+  </footer>
+</div>
+
+</div><!-- app-wrap -->
+
+<script>
+  function tick(){
+    const n=new Date();
+    document.getElementById('clock').textContent=
+      n.toLocaleDateString('en',{weekday:'short',month:'short',day:'numeric'})+' · '+
+      n.toLocaleTimeString('en',{hour12:false});
+  }
+  tick(); setInterval(tick,1000);
+
+  // Stagger table rows on load
+  document.querySelectorAll('.dtable tbody tr').forEach((r,i)=>{
+    r.classList.add('animate-row');
+    r.style.animationDelay=(i*0.04)+'s';
+  });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

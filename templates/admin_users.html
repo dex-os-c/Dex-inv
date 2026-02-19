@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block title %}User Management — Dex Inv{% endblock %}
+{% block pagetitle %}User Management{% endblock %}
+{% block breadcrumb %}dex-inv / admin / users{% endblock %}
+
+{% block head %}
+<style>
+  #addUserPanel{
+    background:var(--surface2);border:1px solid var(--border);border-radius:12px;
+    padding:22px 24px;margin-bottom:24px;
+    display:none;animation:pageIn .3s ease both;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Add user -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;animation:pageIn .3s ease both">
+  <p style="color:var(--muted2);font-size:13px;margin:0">Manage all user accounts and monitor their activity.</p>
+  <button class="btn-primary-dex" onclick="togglePanel()"><i class="bi bi-person-plus"></i>Add User</button>
+</div>
+
+<div id="addUserPanel">
+  <div style="font-family:var(--font-mono);font-size:11px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px">New User</div>
+  <form method="POST" action="/admin/users/add">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">Username *</label>
+        <input class="form-control" name="username" required placeholder="johndoe"/>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Password *</label>
+        <input class="form-control" name="password" type="password" required placeholder="••••••••"/>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Email</label>
+        <input class="form-control" name="email" type="email" placeholder="user@company.com"/>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Role</label>
+        <select class="form-select" name="role">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Company</label>
+        <select class="form-select" name="company_id">
+          <option value="">— None —</option>
+          {% for c in companies %}
+          <option value="{{ c.id }}">{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 d-flex gap-3">
+        <button class="btn-primary-dex" type="submit"><i class="bi bi-person-check"></i>Create User</button>
+        <button type="button" class="btn-ghost-dex" onclick="togglePanel()">Cancel</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Users Table -->
+<div class="card" style="animation:pageIn .35s .05s ease both">
+  <div class="card-hd">
+    <span>All Users</span>
+    <span style="color:var(--muted2);font-family:var(--font-mono);font-size:10px">{{ users|length }} accounts</span>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="dtable">
+      <thead><tr>
+        <th>#</th><th>Username</th><th>Email</th><th>Role</th>
+        <th>Company</th><th>Last Login</th><th>Joined</th><th>Actions</th>
+      </tr></thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:11px;color:var(--muted2)">{{ u.id }}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:9px">
+              <div style="width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+                display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#000;flex-shrink:0">
+                {{ u.username[0].upper() }}
+              </div>
+              <span style="font-weight:500">{{ u.username }}</span>
+              {% if u.id == session.user_id %}<span class="chip chip-blue" style="font-size:9px">you</span>{% endif %}
+            </div>
+          </td>
+          <td style="font-size:12px;color:var(--muted2)">{{ u.email or '—' }}</td>
+          <td>
+            {% if u.role == 'admin' %}
+              <span class="chip chip-red">ADMIN</span>
+            {% else %}
+              <span class="chip chip-gray">USER</span>
+            {% endif %}
+          </td>
+          <td style="font-size:12px;color:var(--muted2)">{{ u.company_name or '—' }}</td>
+          <td style="font-family:var(--font-mono);font-size:11px;color:var(--muted2)">{{ u.last_login[:10] if u.last_login else 'Never' }}</td>
+          <td style="font-family:var(--font-mono);font-size:11px;color:var(--muted2)">{{ u.created_at[:10] if u.created_at else '—' }}</td>
+          <td>
+            <div style="display:flex;gap:8px;align-items:center">
+              <a href="/admin/activity?user={{ u.username }}" class="btn-ghost-dex btn-sm-dex" title="View activity">
+                <i class="bi bi-activity"></i>
+              </a>
+              {% if u.id != session.user_id %}
+              <form method="POST" action="/admin/users/delete/{{ u.id }}" onsubmit="return confirm('Delete user {{ u.username }}?')">
+                <button class="btn-danger-dex" type="submit" title="Delete"><i class="bi bi-person-x"></i></button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function togglePanel(){
+    const p = document.getElementById('addUserPanel');
+    p.style.display = p.style.display==='none'||!p.style.display ? 'block' : 'none';
+  }
+</script>
+{% endblock %}

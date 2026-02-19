@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard — Dex Inv{% endblock %}
+{% block pagetitle %}
+  Dashboard
+  {% if low_count > 0 %}<span style="font-size:12px;background:rgba(255,77,109,.12);color:#ff4d6d;border:1px solid rgba(255,77,109,.25);padding:2px 10px;border-radius:20px;font-family:var(--font-mono);font-weight:500;margin-left:10px;vertical-align:middle">⚠ {{ low_count }} low stock</span>{% endif %}
+{% endblock %}
+{% block breadcrumb %}dex-inv / dashboard{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  .stat-card{animation:statIn .5s cubic-bezier(.4,0,.2,1) both;}
+  @keyframes statIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- STAT CARDS -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="stat-card" style="--glow-color:rgba(6,214,160,.05);--glow-border:rgba(6,214,160,.25);animation-delay:.0s">
+      <div class="stat-icon-bg" style="background:rgba(6,214,160,.1);color:#06d6a0"><i class="bi bi-boxes" style="font-size:18px"></i></div>
+      <div class="stat-label">Total Products</div>
+      <div class="stat-value" style="color:#06d6a0">{{ products|length }}</div>
+      <div class="stat-sub">SKUs tracked</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card" style="--glow-color:rgba(17,138,178,.05);--glow-border:rgba(17,138,178,.3);animation-delay:.06s">
+      <div class="stat-icon-bg" style="background:rgba(17,138,178,.1);color:#4fc3f7"><i class="bi bi-currency-dollar" style="font-size:18px"></i></div>
+      <div class="stat-label">Inventory Value</div>
+      <div class="stat-value" style="color:#4fc3f7">${{ '{:,.0f}'.format(total_value) }}</div>
+      <div class="stat-sub">Total stock worth</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card" style="--glow-color:rgba(255,77,109,.05);--glow-border:rgba(255,77,109,.25);animation-delay:.12s">
+      <div class="stat-icon-bg" style="background:rgba(255,77,109,.1);color:#ff4d6d"><i class="bi bi-exclamation-diamond" style="font-size:18px"></i></div>
+      <div class="stat-label">Low Stock</div>
+      <div class="stat-value" style="color:{% if low_count>0 %}#ff4d6d{% else %}#06d6a0{% endif %}">{{ low_count }}</div>
+      <div class="stat-sub">Items below threshold</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card" style="--glow-color:rgba(255,209,102,.05);--glow-border:rgba(255,209,102,.25);animation-delay:.18s">
+      <div class="stat-icon-bg" style="background:rgba(255,209,102,.1);color:#ffd166"><i class="bi bi-receipt" style="font-size:18px"></i></div>
+      <div class="stat-label">{% if session.role == 'admin' %}Total Invoices{% else %}My Invoices{% endif %}</div>
+      <div class="stat-value" style="color:#ffd166">{{ invoices_count }}</div>
+      <div class="stat-sub">{{ pending_inv }} pending</div>
+    </div>
+  </div>
+
+  {% if session.role == 'admin' %}
+  <div class="col-6 col-xl-3">
+    <div class="stat-card" style="--glow-color:rgba(139,92,246,.05);--glow-border:rgba(139,92,246,.25);animation-delay:.24s">
+      <div class="stat-icon-bg" style="background:rgba(139,92,246,.1);color:#a78bfa"><i class="bi bi-people" style="font-size:18px"></i></div>
+      <div class="stat-label">Users</div>
+      <div class="stat-value" style="color:#a78bfa">{{ users_count }}</div>
+      <div class="stat-sub">Registered accounts</div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card" style="--glow-color:rgba(251,146,60,.05);--glow-border:rgba(251,146,60,.25);animation-delay:.3s">
+      <div class="stat-icon-bg" style="background:rgba(251,146,60,.1);color:#fb923c"><i class="bi bi-buildings" style="font-size:18px"></i></div>
+      <div class="stat-label">Companies</div>
+      <div class="stat-value" style="color:#fb923c">{{ companies_count }}</div>
+      <div class="stat-sub">Registered orgs</div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- CHART + LOW STOCK -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-8">
+    <div class="card h-100" style="animation:statIn .5s .25s both">
+      <div class="card-hd">
+        <span>Stock Levels</span>
+        <span style="color:var(--accent);font-size:10px;display:flex;align-items:center;gap:5px">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block;animation:pulse-dot 2s infinite"></span>Live
+        </span>
+      </div>
+      <div style="padding:20px">
+        <canvas id="stockChart" style="max-height:260px"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100" style="animation:statIn .5s .32s both">
+      <div class="card-hd">
+        <span>⚠ Low Stock Alerts</span>
+        <span class="chip chip-red">{{ low_count }}</span>
+      </div>
+      <div style="overflow-y:auto;max-height:300px">
+        {% if low_stock %}
+          {% for p in low_stock %}
+          <div style="padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;transition:background .12s;"
+               onmouseenter="this.style.background='rgba(255,77,109,.04)'" onmouseleave="this.style.background=''">
+            <div>
+              <div style="font-size:13px;font-weight:500">{{ p.name }}</div>
+              <div style="font-size:10px;color:var(--muted2);font-family:var(--font-mono)">{{ p.sku }}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-family:var(--font-mono);font-size:18px;color:#ff4d6d;font-weight:700;line-height:1">{{ p.quantity }}</div>
+              <div style="font-size:9px;color:var(--muted2)">min {{ p.threshold }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div style="padding:30px;text-align:center;color:var(--muted2)">
+            <i class="bi bi-shield-check" style="font-size:28px;color:#06d6a0;display:block;margin-bottom:8px"></i>
+            All items well stocked
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RECENT ACTIVITY -->
+<div class="card" style="animation:statIn .5s .38s both">
+  <div class="card-hd">
+    <span>Recent Activity</span>
+    <a href="/transactions" style="color:var(--accent);font-size:11px;text-decoration:none;font-family:var(--font-mono)">View all →</a>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="dtable">
+      <thead><tr>
+        <th>Time</th><th>Product</th><th>Type</th><th>Qty Δ</th><th>Note</th>
+        {% if session.role=='admin' %}<th>User</th>{% endif %}
+      </tr></thead>
+      <tbody>
+        {% for tx in recent_tx %}
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:11px;color:var(--muted2)">{{ tx.timestamp[-8:] if tx.timestamp else '—' }}</td>
+          <td style="font-weight:500;font-size:13px">{{ tx.product_name }}</td>
+          <td>
+            {% set tc = tx.type.lower() %}
+            <span class="chip {% if tc=='restock' or tc=='added' %}chip-green{% elif tc=='dispatch' %}chip-yellow{% elif tc=='deleted' %}chip-red{% else %}chip-blue{% endif %}">
+              {{ tx.type }}
+            </span>
+          </td>
+          <td style="font-family:var(--font-mono);font-weight:700;color:{% if tx.quantity_change>0 %}#06d6a0{% elif tx.quantity_change<0 %}#ff4d6d{% else %}var(--muted2){% endif %}">
+            {{ '+' if tx.quantity_change > 0 else '' }}{{ tx.quantity_change }}
+          </td>
+          <td style="color:var(--muted2);font-size:12px">{{ tx.note or '—' }}</td>
+          {% if session.role=='admin' %}<td style="font-family:var(--font-mono);font-size:11px;color:var(--muted2)">{{ tx.username or '—' }}</td>{% endif %}
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted2)">No activity yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const labels = {{ chart_labels|tojson }};
+const data   = {{ chart_data|tojson }};
+const colors = {{ chart_colors|tojson }};
+
+const ctx = document.getElementById('stockChart').getContext('2d');
+new Chart(ctx,{
+  type:'bar',
+  data:{
+    labels,
+    datasets:[{
+      label:'Quantity',
+      data,
+      backgroundColor:colors.map(c=>c+'22'),
+      borderColor:colors,
+      borderWidth:2,
+      borderRadius:6,
+      borderSkipped:false,
+    }]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:true,
+    animation:{duration:800,easing:'easeOutQuart'},
+    plugins:{legend:{display:false},tooltip:{
+      backgroundColor:'#0e1117',titleColor:'#6b7a90',
+      bodyColor:'#eef0f4',borderColor:'#1d2638',borderWidth:1,
+      padding:10,cornerRadius:8,
+    }},
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,.03)',drawBorder:false},ticks:{color:'#4a5568',font:{size:10,family:'JetBrains Mono'}}},
+      y:{grid:{color:'rgba(255,255,255,.03)',drawBorder:false},ticks:{color:'#4a5568',font:{size:10,family:'JetBrains Mono'}},beginAtZero:true}
+    }
+  }
+});
+</script>
+{% endblock %}

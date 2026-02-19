@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Billing — Dex Inv{% endblock %}
+{% block pagetitle %}Billing & Invoices{% endblock %}
+{% block breadcrumb %}dex-inv / billing{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4" style="animation:pageIn .35s ease both">
+  <div>
+    <p style="color:var(--muted2);font-size:13px;margin:0">Manage your invoices and billing records</p>
+  </div>
+  <a href="/invoices/new" class="btn-primary-dex"><i class="bi bi-plus-lg"></i>New Invoice</a>
+</div>
+
+<!-- Summary chips -->
+<div class="d-flex gap-3 mb-4" style="animation:pageIn .35s .05s ease both;flex-wrap:wrap">
+  {% set total_invoices = invoices|length %}
+  {% set paid = invoices|selectattr('status','eq','paid')|list|length %}
+  {% set sent = invoices|selectattr('status','eq','sent')|list|length %}
+  {% set drafts = invoices|selectattr('status','eq','draft')|list|length %}
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:10px">
+    <span style="font-size:11px;color:var(--muted2);font-family:var(--font-mono)">TOTAL</span>
+    <span style="font-family:var(--font-display);font-size:20px;font-weight:700">{{ total_invoices }}</span>
+  </div>
+  <div style="background:var(--surface);border:1px solid rgba(6,214,160,.2);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:10px">
+    <span style="font-size:11px;color:var(--muted2);font-family:var(--font-mono)">PAID</span>
+    <span style="font-family:var(--font-display);font-size:20px;font-weight:700;color:#06d6a0">{{ paid }}</span>
+  </div>
+  <div style="background:var(--surface);border:1px solid rgba(255,209,102,.2);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:10px">
+    <span style="font-size:11px;color:var(--muted2);font-family:var(--font-mono)">SENT</span>
+    <span style="font-family:var(--font-display);font-size:20px;font-weight:700;color:#ffd166">{{ sent }}</span>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:10px">
+    <span style="font-size:11px;color:var(--muted2);font-family:var(--font-mono)">DRAFT</span>
+    <span style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--muted2)">{{ drafts }}</span>
+  </div>
+  <div style="background:var(--surface);border:1px solid rgba(17,138,178,.2);border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:10px">
+    <span style="font-size:11px;color:var(--muted2);font-family:var(--font-mono)">REVENUE</span>
+    <span style="font-family:var(--font-display);font-size:20px;font-weight:700;color:#4fc3f7">
+      ${%- set ns=namespace(rev=0) %}{% for i in invoices if i.status=='paid' %}{% set ns.rev=ns.rev+i.total %}{% endfor %}{{ '{:,.0f}'.format(ns.rev) }}
+    </span>
+  </div>
+</div>
+
+<div class="card" style="animation:pageIn .35s .1s ease both">
+  <div class="card-hd">
+    <span>Invoice History</span>
+    <span style="color:var(--muted2);font-family:var(--font-mono);font-size:10px">{{ invoices|length }} records</span>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="dtable">
+      <thead><tr>
+        <th>Invoice #</th>
+        {% if session.role=='admin' %}<th>Company</th>{% endif %}
+        <th>Billed To</th><th>Status</th><th>Total</th><th>Due Date</th><th>Created</th><th>Actions</th>
+      </tr></thead>
+      <tbody>
+        {% for inv in invoices %}
+        <tr>
+          <td><a href="/invoices/{{ inv.id }}" style="color:var(--accent);text-decoration:none;font-family:var(--font-mono);font-size:12px;font-weight:600">{{ inv.invoice_number }}</a></td>
+          {% if session.role=='admin' %}<td style="font-size:12px;color:var(--muted2)">{{ inv.company_name or '—' }}</td>{% endif %}
+          <td style="font-weight:500;font-size:13px">{{ inv.billed_to or '—' }}</td>
+          <td>
+            {% if inv.status == 'paid' %}
+              <span class="chip chip-green">PAID</span>
+            {% elif inv.status == 'sent' %}
+              <span class="chip chip-yellow">SENT</span>
+            {% elif inv.status == 'cancelled' %}
+              <span class="chip chip-red">CANCELLED</span>
+            {% else %}
+              <span class="chip chip-gray">DRAFT</span>
+            {% endif %}
+          </td>
+          <td style="font-family:var(--font-mono);font-weight:600;color:var(--accent)">${{ '{:,.2f}'.format(inv.total) }}</td>
+          <td style="font-family:var(--font-mono);font-size:11px;color:var(--muted2)">{{ inv.due_date or '—' }}</td>
+          <td style="font-family:var(--font-mono);font-size:11px;color:var(--muted2)">{{ inv.created_at[:10] if inv.created_at else '—' }}</td>
+          <td>
+            <div style="display:flex;gap:6px;align-items:center">
+              <a href="/invoices/{{ inv.id }}" class="btn-ghost-dex btn-sm-dex"><i class="bi bi-eye"></i></a>
+              <form method="POST" action="/invoices/{{ inv.id }}/delete" onsubmit="return confirm('Delete this invoice?')">
+                <button class="btn-danger-dex" type="submit"><i class="bi bi-trash"></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" style="text-align:center;padding:48px;color:var(--muted2)">
+          <i class="bi bi-receipt" style="font-size:32px;display:block;margin-bottom:10px;opacity:.4"></i>
+          No invoices yet. <a href="/invoices/new" style="color:var(--accent)">Create your first invoice →</a>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

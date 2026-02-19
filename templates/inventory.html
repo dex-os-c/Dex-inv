@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}Inventory — Dex Inv{% endblock %}
+{% block pagetitle %}Inventory{% endblock %}
+{% block breadcrumb %}dex-inv / inventory{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4" style="animation:pageIn .35s ease both">
+  <form method="GET" class="d-flex gap-2" style="flex:1;max-width:500px">
+    <div style="position:relative;flex:1">
+      <i class="bi bi-search" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px"></i>
+      <input class="form-control" name="q" value="{{ q }}" placeholder="Search name or SKU…" style="padding-left:33px;font-size:13px"/>
+    </div>
+    <select class="form-select" name="cat" style="width:155px;font-size:13px">
+      <option value="">All Categories</option>
+      {% for c in categories %}
+        <option value="{{ c.category }}" {% if cat==c.category %}selected{% endif %}>{{ c.category }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn-ghost-dex" type="submit">Filter</button>
+    {% if q or cat %}<a href="/inventory" class="btn-ghost-dex">Clear</a>{% endif %}
+  </form>
+  <a href="/product/add" class="btn-primary-dex ms-3"><i class="bi bi-plus-lg"></i>Add Product</a>
+</div>
+
+<div class="card" style="animation:pageIn .35s .05s ease both">
+  <div class="card-hd">
+    <span>Product Catalog</span>
+    <span style="color:var(--muted2);font-family:var(--font-mono);font-size:10px">{{ products|length }} items</span>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="dtable">
+      <thead><tr>
+        <th>SKU</th><th>Name</th><th>Category</th>
+        {% if session.role=='admin' %}<th>Company</th>{% endif %}
+        <th>Qty</th><th>Unit Price</th><th>Value</th><th>Status</th><th>Actions</th>
+      </tr></thead>
+      <tbody>
+        {% for p in products %}
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:11px;color:var(--muted2)">{{ p.sku }}</td>
+          <td style="font-weight:500">{{ p.name }}</td>
+          <td><span class="chip chip-gray">{{ p.category or '—' }}</span></td>
+          {% if session.role=='admin' %}
+          <td style="font-size:12px;color:var(--muted2)">{{ p.company_name or '—' }}</td>
+          {% endif %}
+          <td>
+            <span style="font-family:var(--font-mono);font-weight:700;font-size:15px;
+              color:{% if p.quantity < p.threshold %}#ff4d6d{% elif p.quantity < p.threshold*2 %}#ffb703{% else %}#06d6a0{% endif %}">
+              {{ p.quantity }}
+            </span>
+          </td>
+          <td style="font-family:var(--font-mono);font-size:12px">${{ '%.2f'|format(p.price) }}</td>
+          <td style="font-family:var(--font-mono);font-size:12px;color:var(--accent)">${{ '{:,.2f}'.format(p.quantity * p.price) }}</td>
+          <td>
+            {% if p.quantity == 0 %}
+              <span class="chip chip-red">OUT</span>
+            {% elif p.quantity < p.threshold %}
+              <span class="chip chip-red">LOW</span>
+            {% else %}
+              <span class="chip chip-green">OK</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px">
+              <form method="POST" action="/product/adjust/{{ p.id }}" style="display:flex;gap:3px">
+                <input type="hidden" name="note" value="Quick"/>
+                <button class="btn-ghost-dex btn-sm-dex" name="delta" value="-1" title="−1">−</button>
+                <button class="btn-ghost-dex btn-sm-dex" name="delta" value="1"
+                  style="color:var(--accent);border-color:rgba(6,214,160,.25)" title="+1">+</button>
+              </form>
+              <a href="/product/edit/{{ p.id }}" style="color:var(--accent2);font-size:14px" title="Edit"><i class="bi bi-pencil-fill"></i></a>
+              <form method="POST" action="/product/delete/{{ p.id }}" onsubmit="return confirm('Delete {{ p.name }}?')">
+                <button class="btn-danger-dex" type="submit"><i class="bi bi-trash"></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" style="text-align:center;padding:48px;color:var(--muted2)">
+          <i class="bi bi-inbox" style="font-size:32px;display:block;margin-bottom:10px;opacity:.4"></i>
+          No products yet. <a href="/product/add" style="color:var(--accent)">Add your first product →</a>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

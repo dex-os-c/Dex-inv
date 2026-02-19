@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Dex Inv — Register Company</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet"/>
+  <style>
+    :root{--bg:#07080d;--surface:#0e1117;--border:#1d2638;--accent:#06d6a0;--text:#eef0f4;--muted:#4a5568;--muted2:#6b7a90;}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;min-height:100vh;padding:40px 20px;}
+    .grid-bg{position:fixed;inset:0;pointer-events:none;
+      background-image:linear-gradient(rgba(6,214,160,.03) 1px,transparent 1px),
+                       linear-gradient(90deg,rgba(6,214,160,.03) 1px,transparent 1px);
+      background-size:48px 48px;animation:gridMove 20s linear infinite;}
+    @keyframes gridMove{from{background-position:0 0}to{background-position:48px 48px}}
+    .glow1{position:fixed;top:-100px;left:50%;transform:translateX(-50%);
+      width:700px;height:400px;
+      background:radial-gradient(ellipse,rgba(6,214,160,.07) 0%,transparent 65%);pointer-events:none;}
+
+    .wrap{max-width:620px;margin:0 auto;position:relative;z-index:10;}
+
+    .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--muted2);
+      text-decoration:none;font-size:13px;margin-bottom:24px;transition:color .15s;}
+    .back-link:hover{color:var(--accent);}
+
+    .brand-row{display:flex;align-items:center;gap:11px;margin-bottom:28px;}
+    .logo-mark{width:38px;height:38px;background:var(--accent);border-radius:10px;
+      display:flex;align-items:center;justify-content:center;
+      font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:#000;}
+    .brand-text{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;}
+    .brand-text span{color:var(--accent);}
+
+    .signup-card{
+      background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px;
+      animation:cardIn .5s cubic-bezier(.4,0,.2,1) both;
+      box-shadow:0 20px 60px rgba(0,0,0,.4);
+    }
+    @keyframes cardIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+
+    .section-title{
+      font-family:'Syne',sans-serif;font-size:13px;font-weight:700;
+      color:var(--accent);letter-spacing:1px;text-transform:uppercase;
+      margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);
+      display:flex;align-items:center;gap:8px;
+    }
+    .form-row{display:grid;gap:14px;margin-bottom:0;}
+    .form-row.cols-2{grid-template-columns:1fr 1fr;}
+    .form-row.cols-3{grid-template-columns:1fr 1fr 1fr;}
+
+    .form-group{margin-bottom:0;}
+    label{display:block;font-size:10px;font-weight:500;color:var(--muted2);
+      letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;font-family:'JetBrains Mono',monospace;}
+    input,select{
+      width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);
+      color:var(--text);border-radius:8px;padding:10px 13px;font-size:13.5px;
+      font-family:'Outfit',sans-serif;outline:none;transition:all .2s;
+    }
+    input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(6,214,160,.1);}
+    input::placeholder{color:var(--muted);}
+    select option{background:#0e1117;}
+
+    .section-spacer{margin:24px 0;}
+
+    .error-box{background:rgba(255,77,109,.08);border:1px solid rgba(255,77,109,.25);
+      color:#ff4d6d;border-radius:9px;padding:10px 14px;font-size:13px;
+      margin-bottom:20px;display:flex;align-items:center;gap:8px;}
+
+    .btn-submit{
+      width:100%;padding:12px;background:var(--accent);color:#000;
+      font-weight:700;border:none;border-radius:9px;font-size:14.5px;
+      cursor:pointer;transition:all .18s;font-family:'Outfit',sans-serif;
+      display:flex;align-items:center;justify-content:center;gap:6px;margin-top:6px;
+    }
+    .btn-submit:hover{background:#05c490;transform:translateY(-1px);box-shadow:0 8px 24px rgba(6,214,160,.25);}
+
+    .footer-credit{text-align:center;margin-top:24px;font-family:'JetBrains Mono',monospace;
+      font-size:10px;color:var(--muted);}
+    .footer-credit a{color:var(--muted2);text-decoration:none;}
+    .footer-credit a:hover{color:var(--accent);}
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div><div class="glow1"></div>
+
+  <div class="wrap">
+    <a href="/login" class="back-link"><i class="bi bi-arrow-left"></i>Back to login</a>
+
+    <div class="brand-row">
+      <div class="logo-mark">D</div>
+      <div class="brand-text">Dex <span>Inv</span></div>
+    </div>
+
+    <div class="signup-card">
+      <div style="margin-bottom:24px">
+        <h2 style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;margin-bottom:4px;">Register your company</h2>
+        <p style="color:var(--muted2);font-size:13px;">Create an account linked to your billing information</p>
+      </div>
+
+      {% if error %}<div class="error-box"><i class="bi bi-exclamation-circle-fill"></i>{{ error }}</div>{% endif %}
+
+      <form method="POST">
+        <!-- Company Info -->
+        <div class="section-title"><i class="bi bi-buildings"></i>Company Information</div>
+        <div class="form-row cols-2" style="margin-bottom:14px">
+          <div class="form-group">
+            <label>Company Name *</label>
+            <input name="company_name" required placeholder="Acme Corp"/>
+          </div>
+          <div class="form-group">
+            <label>Company Email *</label>
+            <input name="company_email" type="email" required placeholder="billing@acme.com"/>
+          </div>
+        </div>
+
+        <!-- Billing Address -->
+        <div class="section-title" style="margin-top:20px"><i class="bi bi-geo-alt"></i>Billing Address</div>
+        <div class="form-row" style="margin-bottom:14px">
+          <div class="form-group">
+            <label>Street Address</label>
+            <input name="address" placeholder="123 Main Street, Suite 100"/>
+          </div>
+        </div>
+        <div class="form-row cols-3" style="margin-bottom:14px">
+          <div class="form-group">
+            <label>City</label>
+            <input name="city" placeholder="New York"/>
+          </div>
+          <div class="form-group">
+            <label>State / Province</label>
+            <input name="state" placeholder="NY"/>
+          </div>
+          <div class="form-group">
+            <label>ZIP / Postal</label>
+            <input name="zip" placeholder="10001"/>
+          </div>
+        </div>
+        <div class="form-row cols-2" style="margin-bottom:14px">
+          <div class="form-group">
+            <label>Country</label>
+            <select name="country">
+              <option value="US">United States</option>
+              <option value="GB">United Kingdom</option>
+              <option value="CA">Canada</option>
+              <option value="AU">Australia</option>
+              <option value="DE">Germany</option>
+              <option value="FR">France</option>
+              <option value="JP">Japan</option>
+              <option value="SG">Singapore</option>
+              <option value="IN">India</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Account -->
+        <div class="section-title" style="margin-top:20px"><i class="bi bi-person-badge"></i>Account Credentials</div>
+        <div class="form-row cols-2" style="margin-bottom:14px">
+          <div class="form-group">
+            <label>Username *</label>
+            <input name="username" required placeholder="johndoe" style="font-family:'JetBrains Mono',monospace"/>
+          </div>
+          <div class="form-group">
+            <label>Password *</label>
+            <input name="password" type="password" required placeholder="••••••••"/>
+          </div>
+        </div>
+
+        <button class="btn-submit" type="submit">
+          <i class="bi bi-building-add"></i>Create Company Account
+        </button>
+      </form>
+    </div>
+
+    <div class="footer-credit">
+      Dex Inv · <a href="https://instagram.com/dex.asm" target="_blank"><i class="bi bi-instagram"></i> @dex.asm</a>
+    </div>
+  </div>
+</body>
+</html>

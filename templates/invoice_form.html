@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% block title %}New Invoice — Dex Inv{% endblock %}
+{% block pagetitle %}New Invoice{% endblock %}
+{% block breadcrumb %}dex-inv / billing / new{% endblock %}
+
+{% block head %}
+<style>
+  .line-item{
+    background:var(--surface2);border:1px solid var(--border);
+    border-radius:10px;padding:14px;margin-bottom:10px;
+    animation:rowIn .25s ease both;position:relative;
+  }
+  .remove-line{position:absolute;top:10px;right:10px;background:none;border:none;
+    color:var(--muted);cursor:pointer;font-size:15px;transition:color .15s;padding:2px 6px;}
+  .remove-line:hover{color:var(--danger);}
+  .line-total{font-family:var(--font-mono);font-size:14px;font-weight:600;color:var(--accent);
+    padding:9px 13px;background:rgba(6,214,160,.06);border:1px solid rgba(6,214,160,.15);
+    border-radius:8px;display:flex;align-items:center;height:38px;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:780px;animation:pageIn .35s ease both">
+  <div class="card">
+    <div class="card-hd">
+      <span>CREATE INVOICE</span>
+      <span style="color:var(--accent);font-family:var(--font-mono)">{{ inv_num }}</span>
+    </div>
+    <div style="padding:26px">
+      <form method="POST" id="invoiceForm">
+
+        <!-- Invoice Meta -->
+        <div class="row g-3 mb-4">
+          {% if session.role == 'admin' %}
+          <div class="col-md-6">
+            <label class="form-label">From Company</label>
+            <select class="form-select" name="company_id" required>
+              <option value="">Select company…</option>
+              {% for c in companies %}
+              <option value="{{ c.id }}">{{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+          <div class="col-md-6">
+            <label class="form-label">Billed To (Client Name)</label>
+            <input class="form-control" name="billed_to" required placeholder="Client Inc."/>
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">Client Address</label>
+            <input class="form-control" name="billed_to_address" placeholder="123 Client St, New York, NY 10001"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Due Date</label>
+            <input class="form-control" name="due_date" type="date"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Tax Rate (%)</label>
+            <input class="form-control" name="tax_rate" type="number" step="0.1" min="0" max="100" value="0"
+              id="taxRate" oninput="recalc()" style="font-family:var(--font-mono)"/>
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">Notes</label>
+            <textarea class="form-control" name="notes" rows="2" placeholder="Payment terms, special instructions…" style="resize:vertical"></textarea>
+          </div>
+        </div>
+
+        <!-- Line Items -->
+        <div style="border-top:1px solid var(--border);padding-top:20px;margin-bottom:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted2);letter-spacing:1.5px;text-transform:uppercase">Line Items</div>
+            <button type="button" onclick="addLine()" class="btn-ghost-dex btn-sm-dex"><i class="bi bi-plus"></i>Add Line</button>
+          </div>
+          <!-- Header -->
+          <div class="row g-2 mb-1" style="font-family:var(--font-mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;padding:0 14px">
+            <div class="col">Description</div>
+            <div class="col-2">Qty</div>
+            <div class="col-2">Unit Price</div>
+            <div class="col-2">Total</div>
+            <div class="col-auto" style="width:36px"></div>
+          </div>
+          <div id="lineItems">
+            <!-- default row -->
+            <div class="line-item">
+              <button type="button" class="remove-line" onclick="removeLine(this)">×</button>
+              <div class="row g-2 align-items-center">
+                <div class="col"><input class="form-control" name="desc[]" required placeholder="Service or product description" oninput="recalc()"/></div>
+                <div class="col-2"><input class="form-control" name="qty[]" type="number" min="1" value="1" required oninput="recalc()" style="font-family:var(--font-mono)"/></div>
+                <div class="col-2"><input class="form-control" name="price[]" type="number" step="0.01" min="0" value="0.00" required oninput="recalc()" style="font-family:var(--font-mono)"/></div>
+                <div class="col-2"><div class="line-total">$0.00</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Totals -->
+        <div style="display:flex;justify-content:flex-end">
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:18px 24px;min-width:260px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;color:var(--muted2)">
+              <span>Subtotal</span>
+              <span id="subtotal" style="font-family:var(--font-mono)">$0.00</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:14px;font-size:13px;color:var(--muted2)">
+              <span>Tax (<span id="taxPct">0</span>%)</span>
+              <span id="taxAmt" style="font-family:var(--font-mono)">$0.00</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding-top:12px;border-top:1px solid var(--border)">
+              <span style="font-family:var(--font-display);font-weight:700;font-size:16px">Total</span>
+              <span id="grandTotal" style="font-family:var(--font-mono);font-size:20px;font-weight:700;color:var(--accent)">$0.00</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex gap-3 mt-4">
+          <button class="btn-primary-dex" type="submit"><i class="bi bi-file-earmark-check"></i>Create Invoice</button>
+          <a href="/invoices" class="btn-ghost-dex">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function addLine(){
+  const container = document.getElementById('lineItems');
+  const div = document.createElement('div');
+  div.className = 'line-item';
+  div.innerHTML = `
+    <button type="button" class="remove-line" onclick="removeLine(this)">×</button>
+    <div class="row g-2 align-items-center">
+      <div class="col"><input class="form-control" name="desc[]" required placeholder="Service or product description" oninput="recalc()"/></div>
+      <div class="col-2"><input class="form-control" name="qty[]" type="number" min="1" value="1" required oninput="recalc()" style="font-family:var(--font-mono)"/></div>
+      <div class="col-2"><input class="form-control" name="price[]" type="number" step="0.01" min="0" value="0.00" required oninput="recalc()" style="font-family:var(--font-mono)"/></div>
+      <div class="col-2"><div class="line-total">$0.00</div></div>
+    </div>`;
+  container.appendChild(div);
+}
+function removeLine(btn){
+  const items = document.querySelectorAll('.line-item');
+  if(items.length > 1){ btn.closest('.line-item').remove(); recalc(); }
+}
+function recalc(){
+  const qtys   = [...document.querySelectorAll('[name="qty[]"]')].map(i=>parseFloat(i.value)||0);
+  const prices = [...document.querySelectorAll('[name="price[]"]')].map(i=>parseFloat(i.value)||0);
+  const totals = document.querySelectorAll('.line-total');
+  let subtotal = 0;
+  qtys.forEach((q,i)=>{ const t=q*prices[i]; totals[i].textContent='$'+t.toFixed(2); subtotal+=t; });
+  const taxRate = parseFloat(document.getElementById('taxRate').value)||0;
+  const tax = subtotal * taxRate / 100;
+  const grand = subtotal + tax;
+  document.getElementById('subtotal').textContent  = '$'+subtotal.toFixed(2);
+  document.getElementById('taxPct').textContent    = taxRate;
+  document.getElementById('taxAmt').textContent    = '$'+tax.toFixed(2);
+  document.getElementById('grandTotal').textContent= '$'+grand.toFixed(2);
+}
+</script>
+{% endblock %}
